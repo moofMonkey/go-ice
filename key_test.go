@@ -16,6 +16,7 @@ func BenchmarkKey(b *testing.B) {
 	key.SetSeed(seed)
 	var data [BlockSize * 1024]byte
 	rand.Read(data[:])
+	var dst [len(data)]byte
 	b.Run("Init", func(b *testing.B) {
 		b.ReportAllocs()
 		b.SetBytes(16)
@@ -28,7 +29,7 @@ func BenchmarkKey(b *testing.B) {
 		b.SetBytes(BlockSize * 1024)
 		for i := 0; i < b.N; i++ {
 			for j := 0; j < 1024; j++ {
-				key.Encrypt(data[j*BlockSize:])
+				key.Encrypt(dst[j*BlockSize:], data[j*BlockSize:])
 			}
 		}
 	})
@@ -37,7 +38,7 @@ func BenchmarkKey(b *testing.B) {
 		b.SetBytes(BlockSize * 1024)
 		for i := 0; i < b.N; i++ {
 			for j := 0; j < 1024; j++ {
-				key.Decrypt(data[j*BlockSize:])
+				key.Decrypt(dst[j*BlockSize:], data[j*BlockSize:])
 			}
 		}
 	})
@@ -48,16 +49,17 @@ func TestKey(t *testing.T) {
 	seedParsed, _ := hex.DecodeString("52fdfc072182654f")
 	copy(seed[:], seedParsed)
 	data, _ := hex.DecodeString("163f5f0f9a621d72")
-	dataOrig := append([]byte(nil), data...)
 	encryptedExpect, _ := hex.DecodeString("1fffcd22d2488a39")
 	var key Key
 	key.SetSeed(seed)
 	t.Run("Encrypt", func(t *testing.T) {
-		key.Encrypt(data[:])
-		require.Equal(t, encryptedExpect, data)
+		var res [BlockSize]byte
+		key.Encrypt(res[:], data)
+		require.Equal(t, encryptedExpect, res[:])
 	})
 	t.Run("Decrypt", func(t *testing.T) {
-		key.Decrypt(data[:])
-		require.Equal(t, dataOrig, data)
+		var res [BlockSize]byte
+		key.Decrypt(res[:], encryptedExpect)
+		require.Equal(t, data, res[:])
 	})
 }

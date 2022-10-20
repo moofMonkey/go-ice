@@ -1,10 +1,13 @@
 package ice
 
-import "io"
+import (
+	"crypto/cipher"
+	"io"
+)
 
 type Reader struct {
 	src            io.Reader
-	key            *Key
+	key            cipher.Block
 	remainingBytes int
 	cache          [BlockSize]byte
 }
@@ -31,7 +34,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 				readSize = actualRead - (actualRead % BlockSize)
 			}
 			for i := 0; i < readSize; i += BlockSize {
-				r.key.Decrypt(p[i:])
+				r.key.Decrypt(p[i:], p[i:])
 			}
 			p = p[readSize:]
 			n += readSize
@@ -46,7 +49,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 		if _, err = io.ReadFull(r.src, r.cache[:]); err != nil {
 			return
 		}
-		r.key.Decrypt(r.cache[:])
+		r.key.Decrypt(r.cache[:], r.cache[:])
 		readSize := len(r.cache)
 		if readSize > len(p) {
 			readSize = len(p)
@@ -59,7 +62,7 @@ func (r *Reader) Read(p []byte) (n int, err error) {
 	return
 }
 
-func NewReader(r io.Reader, key *Key) *Reader {
+func NewReader(r io.Reader, key cipher.Block) *Reader {
 	return &Reader{
 		src: r,
 		key: key,

@@ -1,6 +1,9 @@
 package ice
 
-import "encoding/binary"
+import (
+	"crypto/cipher"
+	"encoding/binary"
+)
 
 const BlockSize = 8
 
@@ -112,30 +115,32 @@ type Key struct {
 	keysched [16][3]uint32
 }
 
-func (key *Key) Encrypt(data []byte) {
-	l := binary.BigEndian.Uint32(data[:])
-	r := binary.BigEndian.Uint32(data[4:])
+var _ = cipher.Block(&Key{})
+
+func (key *Key) Encrypt(dst, src []byte) {
+	l := binary.BigEndian.Uint32(src[:])
+	r := binary.BigEndian.Uint32(src[4:])
 
 	for i := 0; i < 16; i += 2 {
 		l ^= iceF(r, key.keysched[i])
 		r ^= iceF(l, key.keysched[i+1])
 	}
 
-	binary.BigEndian.PutUint32(data[:], r)
-	binary.BigEndian.PutUint32(data[4:], l)
+	binary.BigEndian.PutUint32(dst[:], r)
+	binary.BigEndian.PutUint32(dst[4:], l)
 }
 
-func (key *Key) Decrypt(data []byte) {
-	l := binary.BigEndian.Uint32(data[:])
-	r := binary.BigEndian.Uint32(data[4:])
+func (key *Key) Decrypt(dst, src []byte) {
+	l := binary.BigEndian.Uint32(src[:])
+	r := binary.BigEndian.Uint32(src[4:])
 
 	for i := 15; i > 0; i -= 2 {
 		l ^= iceF(r, key.keysched[i])
 		r ^= iceF(l, key.keysched[i-1])
 	}
 
-	binary.BigEndian.PutUint32(data[:], r)
-	binary.BigEndian.PutUint32(data[4:], l)
+	binary.BigEndian.PutUint32(dst[:], r)
+	binary.BigEndian.PutUint32(dst[4:], l)
 }
 
 func (key *Key) scheduleBuild(kb *[4]uint16, n int, keyRot []int) {
@@ -168,4 +173,8 @@ func (key *Key) SetSeed(seed [8]byte) {
 	}
 	key.scheduleBuild(&kb, 0, iceKeyRot[:])
 	key.scheduleBuild(&kb, 8, iceKeyRot[8:])
+}
+
+func (key *Key) BlockSize() int {
+	return BlockSize
 }

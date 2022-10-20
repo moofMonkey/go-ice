@@ -1,12 +1,13 @@
 package ice
 
 import (
+	"crypto/cipher"
 	"io"
 )
 
 type Writer struct {
 	dst         io.Writer
-	key         *Key
+	key         cipher.Block
 	cachedBytes int
 	cache       [BlockSize * 128]byte
 }
@@ -24,7 +25,7 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 			n += writeSize
 			if w.cachedBytes == BlockSize {
 				w.cachedBytes = 0
-				w.key.Encrypt(w.cache[:])
+				w.key.Encrypt(w.cache[:], w.cache[:])
 				_, err = w.dst.Write(w.cache[:BlockSize])
 				if err != nil {
 					n -= writeSize
@@ -39,9 +40,8 @@ func (w *Writer) Write(p []byte) (n int, err error) {
 		if writeSize > len(w.cache) {
 			writeSize = len(w.cache)
 		}
-		copy(w.cache[:], p[:writeSize])
 		for i := 0; i < writeSize; i += BlockSize {
-			w.key.Encrypt(w.cache[i:])
+			w.key.Encrypt(w.cache[i:], p[i:])
 		}
 		var actualWrote int
 		actualWrote, err = w.dst.Write(w.cache[:writeSize])
@@ -65,12 +65,12 @@ func (w *Writer) Flush() error {
 		w.cache[i] = 0
 	}
 	w.cachedBytes = 0
-	w.key.Encrypt(w.cache[:])
+	w.key.Encrypt(w.cache[:], w.cache[:])
 	_, err := w.dst.Write(w.cache[:BlockSize])
 	return err
 }
 
-func NewWriter(w io.Writer, key *Key) *Writer {
+func NewWriter(w io.Writer, key cipher.Block) *Writer {
 	return &Writer{
 		dst: w,
 		key: key,
