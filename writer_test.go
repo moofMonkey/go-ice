@@ -166,14 +166,11 @@ func BenchmarkWriter(b *testing.B) {
 	rand.Read(data)
 	var key Key
 	key.SetSeed(seed)
-	dataWriter := bytes.NewBuffer(nil)
-	dataWriter.Grow(len(data))
-	w := NewWriter(dataWriter, &key)
+	w := NewWriter(io.Discard, &key)
 	b.Run("Write", func(b *testing.B) {
 		b.ReportAllocs()
 		b.SetBytes(int64(len(data)))
 		for i := 0; i < b.N; i++ {
-			dataWriter.Reset()
 			_, _ = w.Write(data)
 		}
 	})
