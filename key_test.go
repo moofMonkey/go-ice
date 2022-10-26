@@ -62,4 +62,7 @@ func TestKey(t *testing.T) {
 		key.Decrypt(res[:], encryptedExpect)
 		require.Equal(t, data, res[:])
 	})
+	t.Run("BlockSize", func(t *testing.T) {
+		require.Equal(t, BlockSize, key.BlockSize())
+	})
 }

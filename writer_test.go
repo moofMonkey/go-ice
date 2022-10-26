@@ -145,9 +145,9 @@ func TestWriter(t *testing.T) {
 			dst:   b,
 			limit: len(data),
 		}, &key)
-		n, err := w.Write([]byte{0, 1, 2, 3, 4, 5, 6})
+		n, err := w.Write(make([]byte, BlockSize-1))
 		require.NoError(t, err)
-		require.Equal(t, 7, n)
+		require.Equal(t, BlockSize-1, n)
 
 		n, err = w.Write(data)
 		require.NoError(t, err)
