@@ -118,6 +118,8 @@ type Key struct {
 var _ = cipher.Block(&Key{})
 
 func (key *Key) Encrypt(dst, src []byte) {
+	_ = src[7]
+	_ = dst[7]
 	l := binary.BigEndian.Uint32(src[:])
 	r := binary.BigEndian.Uint32(src[4:])
 
@@ -131,6 +133,8 @@ func (key *Key) Encrypt(dst, src []byte) {
 }
 
 func (key *Key) Decrypt(dst, src []byte) {
+	_ = src[7]
+	_ = dst[7]
 	l := binary.BigEndian.Uint32(src[:])
 	r := binary.BigEndian.Uint32(src[4:])
 
@@ -144,6 +148,7 @@ func (key *Key) Decrypt(dst, src []byte) {
 }
 
 func (key *Key) scheduleBuild(kb *[4]uint16, n int, keyRot []int) {
+	_ = keyRot[7]
 	for i := 0; i < 8; i++ {
 		kr := keyRot[i]
 		isk := &key.keysched[n+i]
